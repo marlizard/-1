@@ -8,7 +8,8 @@ using namespace std;
 
 typedef double real;
 
-class FDM {
+class FDM
+{
 public:
 	int nx, ny;
 	real kx, ky;
@@ -67,34 +68,36 @@ public:
 
 
 real FDM::u(real x, real y) {
-	//return 5;
-	//return x + y;
-	return x * x + y * y;
+	//return 10;
+	return x + y;
+	//return x * x + y * y;
 	//return x * x * x + y * y * y;
+	//return x * x * x * x + y * y * y * y;
 }
 
 
 real FDM::der_ux(real x, real y) {
 	//return 0;
-	//return 1;
-	return 2 * x;
-	//return -lambda * 6 + gamma * 3 * x * x;
+	return 1;
+	//return 2 * x;
+	//return 3 * x * x;
 }
 
 
 real FDM::der_uy(real x, real y) {
 	//return 0;
-	//return 1;
-	return 2 * y;
+	return 1;
+	//return 2 * y;
 	//return 3 * y * y;
 }
 
 
 real FDM::func_f(real x, real y) {
-	//return 5 * gamma;
-	//return gamma * (x + y);
-	return -4 * lambda + gamma * (x * x + y * y);
+	//return 10 * gamma;
+	return gamma * (x + y);
+	//return -4 * lambda + gamma * (x * x + y * y);
 	//return -lambda * (6 * x + 6 * y) + gamma * (x * x * x + y * y * y);
+	//return -12 * lambda * (x * x + y * y) + gamma * (x * x * x * x + y * y * y * y);
 }
 
 
@@ -112,25 +115,32 @@ void FDM::input() {
 }
 
 
-void FDM::create_grid() {
-	if (kx == 1) hx = (xe - x0) / nx;
-	else hx = (xe - x0) * (kx - 1) / (pow(kx, nx) - 1);
-	
-	if (ky == 1) hy = (ye - y0) / ny;
-	else hy = (ye - y0) * (ky - 1) / (pow(ky, ny) - 1);
+void FDM::create_grid()
+{
+	kx == 1
+		? hx = (xe - x0) / nx
+		: hx = (xe - x0) * (kx - 1) / (pow(kx, nx) - 1);
+
+	ky == 1
+		? hy = (ye - y0) / ny
+		: hy = (ye - y0) * (ky - 1) / (pow(ky, ny) - 1);
 
 	grid.resize((nx + 1) * (ny + 1));
 
-	for (int i = 0; i < grid.size(); i++) grid[i].resize(2);
+	for (int i = 0; i < grid.size(); i++)
+		grid[i].resize(2);
 
 	real x = x0;
 	real y = y0;
 
-	for (int i = 0; i <= ny; i++) {
+	for (int i = 0; i <= ny; i++)
+	{
 		x = x0;
 		grid[(nx + 1) * i][0] = x;
 		grid[(nx + 1) * i][1] = y;
-		for (int j = 1; j <= nx; j++) {
+
+		for (int j = 1; j <= nx; j++)
+		{
 			x += pow(kx, j - 1) * hx;
 			grid[(nx + 1) * i + j][0] = x;
 			grid[(nx + 1) * i + j][1] = y;
@@ -140,24 +150,30 @@ void FDM::create_grid() {
 }
 
 
-void FDM::create_matrix() {
-	d1.resize((nx + 1) * (ny + 1), 0);
-	d5.resize((nx + 1) * (ny + 1), 0);
-	d2.resize((nx + 1) * (ny + 1), 0);
-	d4.resize((nx + 1) * (ny + 1), 0);
-	d3.resize((nx + 1) * (ny + 1), 0);
+void FDM::create_matrix()
+{
+	const int koeff = (nx + 1) * (ny + 1);
+
+	d1.resize(koeff, 0);
+	d2.resize(koeff, 0);
+	d3.resize(koeff, 0);
+	d4.resize(koeff, 0);
+	d5.resize(koeff, 0);
 
 	int indx = 0;
-	while (grid[indx][0] < xm) indx++;
+	while (grid[indx][0] < xm) ++indx;
 
 	int indy = 0, k = 0;
-	while (grid[k][1] < ym) {
+	while (grid[k][1] < ym)
+	{
 		k += nx + 1;
-		indy++;
+		++indy;
 	}
 
-	for (int i = nx + 2; i <= indy * (nx + 1) + indx; i++) {
-		if (!(i % (nx + 1) == 0) && !(i % (nx + 1) == nx)) {
+	for (int i = nx + 2; i <= indy * (nx + 1) + indx; i++)
+	{
+		if (!(i % (nx + 1) == 0) && !(i % (nx + 1) == nx))
+		{
 			d1[i] = -2 * lambda / (grid[i][1] - grid[i - nx - 1][1]) / (grid[i + nx + 1][1] - grid[i - nx - 1][1]);
 			d2[i] = -2 * lambda / (grid[i][0] - grid[i - 1][0]) / (grid[i + 1][0] - grid[i - 1][0]);
 			d3[i] = 2 * lambda * ((1 / (grid[i][0] - grid[i - 1][0]) / (grid[i + 1][0] - grid[i][0])) + (1 / (grid[i][1] - grid[i - nx - 1][1]) / (grid[i + nx + 1][1] - grid[i][1]))) + gamma;
@@ -166,36 +182,45 @@ void FDM::create_matrix() {
 		}
 	}
 
-	for (int i = indy + 1; i < ny; i++) {
-		for (int j = i * (nx + 1) + 1; j < i * (nx + 1) + indx; j++) {
+	for (int i = indy + 1; i < ny; i++)
+	{
+		for (int j = i * (nx + 1) + 1; j < i * (nx + 1) + indx; j++)
+		{
 			d1[j] = -2 * lambda / (grid[j][1] - grid[j - nx - 1][1]) / (grid[j + nx + 1][1] - grid[j - nx - 1][1]);
 			d2[j] = -2 * lambda / (grid[j][0] - grid[j - 1][0]) / (grid[j + 1][0] - grid[j - 1][0]);
 			d3[j] = 2 * lambda * ((1 / (grid[j][0] - grid[j - 1][0]) / (grid[j + 1][0] - grid[j][0])) + (1 / (grid[j][1] - grid[j - nx - 1][1]) / (grid[j + nx + 1][1] - grid[j][1]))) + gamma;
 			d4[j + 1] = -2 * lambda / (grid[j + 1][0] - grid[j][0]) / (grid[j + 1][0] - grid[j - 1][0]);
 			d5[j + nx + 1] = -2 * lambda / (grid[j + nx + 1][1] - grid[j][1]) / (grid[j + nx + 1][1] - grid[j - nx - 1][1]);
-			
 		}
 	}
 
-	if(bottom == 1) first_condition_bottom();
-	else second_condition_bottom();
+	bottom == 1
+		? first_condition_bottom()
+		: second_condition_bottom();
 
-	if (top == 1) first_condition_top();
-	else second_condition_top();
+	top == 1
+		? first_condition_top()
+		: second_condition_top();
 
-	if (right == 1) first_condition_right();
-	else second_condition_right();
+	right == 1
+		? first_condition_right()
+		: second_condition_right();
 
-	if (left == 1) first_condition_left();
-	else second_condition_left();
+	left == 1
+		? first_condition_left()
+		: second_condition_left();
 }
 
 
-void FDM::create_vector() {
-	f.resize((nx + 1) * (ny + 1));
-	x.resize((nx + 1) * (ny + 1));
-	xk.resize((nx + 1) * (ny + 1));
-	for (int i = 0; i < grid.size(); i++) {
+void FDM::create_vector()
+{
+	const int coef = (nx + 1) * (ny + 1);
+	f.resize(coef);
+	x.resize(coef);
+	xk.resize(coef);
+
+	for (int i = 0; i < grid.size(); i++)
+	{
 		f[i] = func_f(grid[i][0], grid[i][1]);
 		x[i] = 1;
 		xk[i] = 1;
@@ -203,32 +228,37 @@ void FDM::create_vector() {
 }
 
 
-void FDM::first_condition_bottom() {
-	for (int i = 0; i <= nx; i++) { 
+void FDM::first_condition_bottom()
+{
+	for (int i = 0; i <= nx; i++)
+	{
 		d3[i] = 1;
 		f[i] = u(grid[i][0], grid[i][1]);
 	}
 }
 
-
-void FDM::first_condition_top() {
-	for (int i = ny * (nx + 1); i < grid.size(); i++) {
-		if (grid[i][0] <= xm) {
+void FDM::first_condition_top()
+{
+	for (int i = ny * (nx + 1); i < grid.size(); i++)
+	{
+		if (grid[i][0] <= xm)
+		{
 			d3[i] = 1;
 			f[i] = u(grid[i][0], grid[i][1]);
 		}
 	}
 
 	int indx = 0;
-	while (grid[indx][0] < xm) indx++;
+	while (grid[indx][0] < xm) ++indx;
 
 	int indy = 0, k = 0;
-	while (grid[k][1] < ym) {
+	while (grid[k][1] < ym)
+	{
 		k += nx + 1;
-		indy++;
+		++indy;
 	}
 
-	for(int i = indy * (nx + 1) + indx + 1; i < (indy + 1) * (nx + 1); i++)
+	for (int i = indy * (nx + 1) + indx + 1; i < (indy + 1) * (nx + 1); i++)
 	{
 		d3[i] = 1;
 		f[i] = u(grid[i][0], grid[i][1]);
@@ -236,39 +266,46 @@ void FDM::first_condition_top() {
 }
 
 
-void FDM::first_condition_left() {
-	for (int i = 0; i <= ny; i++) {
+void FDM::first_condition_left()
+{
+	for (int i = 0; i <= ny; i++)
+	{
 		d3[i * (nx + 1)] = 1;
 		f[i * (nx + 1)] = u(grid[i * (nx + 1)][0], grid[i * (nx + 1)][1]);
 	}
 }
 
-
-void FDM::first_condition_right() {
-	for (int i = 0; i <= ny; i++) {
-		if (grid[i * (nx + 1) + nx][1] <= ym) {
+void FDM::first_condition_right()
+{
+	for (int i = 0; i <= ny; i++)
+	{
+		if (grid[i * (nx + 1) + nx][1] <= ym)
+		{
 			d3[i * (nx + 1) + nx] = 1;
 			f[i * (nx + 1) + nx] = u(grid[i * (nx + 1) + nx][0], grid[i * (nx + 1) + nx][1]);
 		}
 	}
 
 	int indx = 0;
-	while (grid[indx][0] < xm) indx++;
+	while (grid[indx][0] < xm) ++indx;
 
 	int indy = 0, k = 0;
-	while (grid[k][1] < ym) { 
-		k += nx + 1; 
-		indy++;
+	while (grid[k][1] < ym)
+	{
+		k += nx + 1;
+		++indy;
 	}
 
-	for (int i = (indy + 1) * (nx + 1) + indx; i < grid.size(); i += nx + 1) {
+	for (int i = (indy + 1) * (nx + 1) + indx; i < grid.size(); i += nx + 1)
+	{
 		d3[i] = 1;
 		f[i] = u(grid[i][0], grid[i][1]);
 	}
 }
 
 
-void FDM::second_condition_bottom() {
+void FDM::second_condition_bottom()
+{
 	if (left == 2) {
 		f[0] = -lambda * der_uy(grid[0][0], grid[0][1]);
 		d5[nx + 1] = -lambda / hy;
@@ -297,21 +334,24 @@ void FDM::second_condition_top() {
 	}
 
 	int indx = 0;
-	while (grid[indx][0] < xm) indx++;
+	while (grid[indx][0] < xm) ++indx;
 
 	int indy = 0, k = 0;
-	while (grid[k][1] < ym) {
+	while (grid[k][1] < ym)
+	{
 		k += nx + 1;
-		indy++;
+		++indy;
 	}
 
-	for (int i = (nx + 1) * ny + 1; i <= (nx + 1) * ny + indx - 1; i++) {
+	for (int i = (nx + 1) * ny + 1; i <= (nx + 1) * ny + indx - 1; i++)
+	{
 		f[i] = lambda * der_uy(grid[i][0], grid[i][1]);
 		d1[i] = -lambda / (grid[i][1] - grid[i - nx - 1][1]);
 		d3[i] = lambda / (grid[i][1] - grid[i - nx - 1][1]);
 	}
 
-	if (right == 2) {
+	if (right == 2)
+	{
 		f[(nx + 1) * ny + indx] = lambda * der_uy(grid[(nx + 1) * ny + indx][0], grid[(nx + 1) * ny + indx][1]);
 		d1[(nx + 1) * ny + indx] = -lambda / (grid[(nx + 1) * ny + indx][1] - grid[(nx + 1) * (ny - 1) + indx][1]);
 		d3[(nx + 1) * ny + indx] = lambda / (grid[(nx + 1) * ny + indx][1] - grid[(nx + 1) * (ny - 1) + indx][1]);
@@ -321,7 +361,8 @@ void FDM::second_condition_top() {
 		d3[(nx + 1) * (indy + 1) - 1] = lambda / (grid[(nx + 1) * (indy + 1) - 1][1] - grid[(nx + 1) * indy - 1][1]);
 	}
 
-	for (int i = indy * (nx + 1) + indx + 1; i < (indy + 1) * (nx + 1) - 1; i++) {
+	for (int i = indy * (nx + 1) + indx + 1; i < (indy + 1) * (nx + 1) - 1; i++)
+	{
 		f[i] = lambda * der_uy(grid[i][0], grid[i][1]);
 		d1[i] = -lambda / (grid[i][1] - grid[i - nx - 1][1]);
 		d3[i] = lambda / (grid[i][1] - grid[i - nx - 1][1]);
@@ -330,33 +371,17 @@ void FDM::second_condition_top() {
 
 
 void FDM::second_condition_left() {
-	/*if (bottom == 2) {
-		f[0] = -lambda * der_fx(grid[0][0], grid[0][1]);
-		d4[1] = -lambda / hx;
-		d3[0] = lambda / hx;
-	}*/
 
-	for (int i = nx + 1; i < (nx + 1) * ny; i += nx + 1) {
+	for (int i = nx + 1; i < (nx + 1) * ny; i += nx + 1)
+	{
 		f[i] = -lambda * der_ux(grid[i][0], grid[i][1]);
 		d4[i + 1] = -lambda / hx;
 		d3[i] = lambda / hx;
 	}
-
-	/*if (top == 2) {
-		f[(nx + 1) * ny] = -lambda * der_fx(grid[(nx + 1) * ny][0], grid[(nx + 1) * ny][1]);
-		d4[(nx + 1) * ny + 1] = -lambda / hx;
-		d3[(nx + 1) * ny] = lambda / hx;
-	}*/
 }
 
-
-void FDM::second_condition_right() {
-	/*if (bottom == 2) {
-		f[nx] = lambda * der_fx(grid[nx][0], grid[nx][1]);
-		d2[nx] = -lambda / (grid[nx][0] - grid[nx - 1][0]);
-		d3[nx] = lambda / (grid[nx][0] - grid[nx - 1][0]);
-	}*/
-
+void FDM::second_condition_right()
+{
 	int indx = 0;
 	while (grid[indx][0] < xm) indx++;
 
@@ -365,16 +390,6 @@ void FDM::second_condition_right() {
 		k += nx + 1;
 		indy++;
 	}
-
-	/*if (top == 2) {
-		f[(indy + 1) * (nx + 1) - 1] = lambda * der_fx(grid[(indy + 1) * (nx + 1) - 1][0], grid[(indy + 1) * (nx + 1) - 1][1]);
-		d2[(indy + 1) * (nx + 1) - 1] = -lambda / (grid[(indy + 1) * (nx + 1) - 1][0] - grid[(indy + 1) * (nx + 1) - 2][0]);
-		d3[(indy + 1) * (nx + 1) - 1] = lambda / (grid[(indy + 1) * (nx + 1) - 1][0] - grid[(indy + 1) * (nx + 1) - 2][0]);
-
-		f[ny * (nx + 1) + indx] = lambda * der_fx(grid[ny * (nx + 1) + indx][0], grid[ny * (nx + 1) + indx][1]);
-		d2[ny * (nx + 1) + indx] = -lambda / (grid[ny * (nx + 1) + indx][0] - grid[ny * (nx + 1) + indx - 1][0]);
-		d3[ny * (nx + 1) + indx] = lambda / (grid[ny * (nx + 1) + indx][0] - grid[ny * (nx + 1) + indx - 1][0]);
-	}*/
 
 	for (int i = 2 * nx + 1; i < (indy + 1) * (nx + 1) - 1; i += nx + 1) {
 		f[i] = lambda * der_ux(grid[i][0], grid[i][1]);
@@ -391,8 +406,10 @@ void FDM::second_condition_right() {
 
 
 void FDM::null_nodes() {
-	for (int i = 0; i < grid.size(); i++) {
-		if (grid[i][0] > xm && grid[i][0] <= xe && grid[i][1] > ym && grid[i][1] <= ye) {
+	for (int i = 0; i < grid.size(); i++)
+	{
+		if (grid[i][0] > xm && grid[i][0] <= xe && grid[i][1] > ym && grid[i][1] <= ye)
+		{
 			f[i] = 0;
 			d3[i] = 1;
 		}
@@ -400,13 +417,15 @@ void FDM::null_nodes() {
 }
 
 
-real FDM::Ax_before(int i, vector<real> x) {
+real FDM::Ax_before(int i, vector<real> x)
+{
 
 	real s = 0;
 	int m = nx - 1;
 	int n = grid.size();
 
-	if (i == 0) {
+	if (i == 0)
+	{
 		return s;
 	}
 
@@ -416,33 +435,37 @@ real FDM::Ax_before(int i, vector<real> x) {
 		return s;
 	}
 
-	if (0 < i < n - 1) {
+	if (0 < i < n - 1)
+	{
 		if (i - m - 2 >= 0) s += d1[i] * x[i - m - 2];
 		s += d2[i] * x[i - 1];
 		return s;
 	}
 }
 
-
-real FDM::Ax_after(int i, vector<real> x) {
+real FDM::Ax_after(int i, vector<real> x)
+{
 
 	real s = 0;
 	int m = nx - 1;
 	int n = grid.size();
 
-	if (i == 0) {
+	if (i == 0)
+	{
 		s += d3[i] * x[i];
 		s += d4[i + 1] * x[i + 1];
 		s += d5[i + m + 2] * x[i + m + 2];
 		return s;
 	}
 
-	if (i == n - 1) {
+	if (i == n - 1)
+	{
 		s += d3[i] * x[i];
 		return s;
 	}
 
-	if (0 < i < n - 1) {
+	if (0 < i < n - 1)
+	{
 		s += d3[i] * x[i];
 		s += d4[i + 1] * x[i + 1];
 		if (i + m + 2 < n) s += d5[i + m + 2] * x[i + m + 2];
@@ -451,45 +474,53 @@ real FDM::Ax_after(int i, vector<real> x) {
 }
 
 
-real FDM::discrepancy() {
+real FDM::discrepancy()
+{
 	int n = grid.size();
 	real norm_f = 0;
 	for (int i = 0; i < n; i++) norm_f += f[i] * f[i];
 
 	real norm_nev = 0;
-	for (int i = 0; i < n; i++) norm_nev += (f[i] - Ax_before(i, x) - Ax_after(i, x)) * (f[i] - Ax_before(i, x) - Ax_after(i, x));
+	for (int i = 0; i < n; i++)
+		norm_nev += (f[i] - Ax_before(i, x) - Ax_after(i, x)) * (f[i] - Ax_before(i, x) - Ax_after(i, x));
 
 	return sqrt(norm_nev) / sqrt(norm_f);
 }
 
 
-void FDM::iteration_step(vector<real> yk, vector<real> y) {
+void FDM::iteration_step(vector<real> yk, vector<real> y)
+{
 	int n = grid.size();
-	for (int i = 0; i < n; i++) {
+	for (int i = 0; i < n; i++)
+	{
 		real sum = w * (f[i] - Ax_before(i, yk) - Ax_after(i, y)) / d3[i];
 		xk[i] = x[i] + sum;
 	}
 }
 
 
-void FDM::Jacobi_method() {
+void FDM::Jacobi_method()
+{
 	int iteration = 0;
 	int n = grid.size();
-	while (iteration <= maxiter && discrepancy() >= e) {
+	while (iteration <= maxiter && discrepancy() >= e)
+	{
 		iteration_step(x, x);
 
 		for (int i = 0; i < n; i++) x[i] = xk[i];
-		cout << "Iteration number: " << iteration << endl;
-		cout << "Discrepancy value: " << discrepancy() << endl << endl;
+		/*cout << "Iteration number: " << iteration << endl;
+		cout << "Discrepancy value: " << discrepancy() << endl << endl;*/
 		iteration++;
 	}
 }
 
 
-void FDM::Gauss_Seidel_method() {
+void FDM::Gauss_Seidel_method()
+{
 	int iteration = 0;
 	int n = grid.size();
-	while (iteration <= maxiter && discrepancy() >= e) {
+	while (iteration <= maxiter && discrepancy() >= e)
+	{
 		iteration_step(xk, x);
 
 		for (int i = 0; i < n; i++) x[i] = xk[i];
@@ -500,73 +531,34 @@ void FDM::Gauss_Seidel_method() {
 }
 
 
-real FDM::error_count() {
-	real sum = 0;  
-	for (int i = 0; i < grid.size(); i++) {
+real FDM::error_count()
+{
+	real sum = 0;
+	for (int i = 0; i < grid.size(); i++)
+	{
 		if (!(grid[i][0] > xm && grid[i][0] <= xe && grid[i][1] > ym && grid[i][1] <= ye))
 			sum += (x[i] - u(grid[i][0], grid[i][1])) * (x[i] - u(grid[i][0], grid[i][1]));
 	}
 	return sqrt(sum);
 }
 
-
-void FDM::output() {
-	for (int i = 0; i < grid.size(); i++) {
-		cout << i << " : " << grid[i][0] << ", " << grid[i][1];
-		cout << endl;
+void FDM::output()
+{
+	ofstream gridf("grid.txt");
+	for (int i = 0; i < grid.size(); i++)
+	{
+		if (!(grid[i][0] > xm && grid[i][0] <= xe && grid[i][1] > ym && grid[i][1] <= ye))
+		{
+			gridf << /*i << " : " << */ grid[i][0] << " " << grid[i][1];
+			gridf << endl;
+		}
 	}
-
-	cout << endl;
-
-	cout << "f: " << endl;
-	for (int i = 0; i < f.size(); i++) {
-		cout << i << " : " << f[i];
-		cout << endl;
-	}
-
-	cout << endl;
-	cout << "d1: " << endl;
-	for (int i = 0; i < d1.size(); i++) {
-		cout << i << " : " << d1[i];
-		cout << endl;
-	}
-
-	cout << endl;
-
-	cout << "d2: " << endl;
-	for (int i = 0; i < d2.size(); i++) {
-		cout << i << " : " << d2[i];
-		cout << endl;
-	}
-
-	cout << endl;
-
-	cout << "d3: " << endl;
-	for (int i = 0; i < d3.size(); i++) {
-		cout << i << " : " << d3[i];
-		cout << endl;
-	}
-
-	cout << endl;
-
-	cout << "d4: " << endl;
-	for (int i = 0; i < d3.size(); i++) {
-		cout << i << " : " << d4[i];
-		cout << endl;
-	}
-
-	cout << endl;
-
-	cout << "d5: " << endl;
-	for (int i = 0; i < d3.size(); i++) {
-		cout << i << " : " << d5[i];
-		cout << endl;
-	}
-
 
 	ofstream output("output.txt");
-	for (int i = 0; i < grid.size(); i++) {
-		if (!(grid[i][0] > xm && grid[i][0] <= xe && grid[i][1] > ym && grid[i][1] <= ye)) {
+	for (int i = 0; i < grid.size(); i++)
+	{
+		if (!(grid[i][0] > xm && grid[i][0] <= xe && grid[i][1] > ym && grid[i][1] <= ye))
+		{
 			cout << fixed;
 			cout << setprecision(14) << "[" << i << "]: " << x[i] << "		" << u(grid[i][0], grid[i][1]) << "		" << abs(x[i] - u(grid[i][0], grid[i][1])) << endl;
 			output << fixed;
@@ -577,7 +569,6 @@ void FDM::output() {
 
 	cout << "Error value = " << setprecision(14) << error_count();
 }
-
 
 int main() {
 	FDM m;
